@@ -8,6 +8,13 @@ HDFS全称：Hadoop Distributed File System
 
 
 
+### HDFS核心思想
+
+1. 分散存储
+2. 冗余存储
+
+
+
 ### HDFS架构
 
 HDFS是一个主从式的架构，主节点只有一个叫做NameNode。从节点有多个叫DataNode
