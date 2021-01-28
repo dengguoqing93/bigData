@@ -44,3 +44,29 @@ num.io.threads =  32
 + Consumer设计-偏移量存储
   + 0.8以前存储在Zookeeper中，0.8以后存储在Kafka的_consumer_offset的主题中
 
+
+
+
+
+## Kafka的网络设计
+
+​	 基于NIO的网络设计
+
+​	 消息写入到磁盘之前首先放在一个MessageQueue中，再用多线程处理MessageQueue中
+
+ 	有多个Selector设计 	
+
+​	
+
+​	一个Acceptor,负责启动Kafka并监听应用
+
+   三个Processor负责接收请求
+
+​	一个RequestChanel封装RequestQueue负责接收请求
+
+​	一个KafkaRequestPool监听RequestChannel，当RequestChannle中有数据流入时，该进程负责处理数据，并最中放入磁盘。默认有8个线程进行数据处理
+
+​	RequestChannle还封装三个ReposeChannle负责接收响应
+
+
+
