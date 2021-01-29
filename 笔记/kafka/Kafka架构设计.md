@@ -64,9 +64,11 @@ num.io.threads =  32
 
 ​	一个RequestChanel封装RequestQueue负责接收请求
 
-​	一个KafkaRequestPool监听RequestChannel，当RequestChannle中有数据流入时，该进程负责处理数据，并最中放入磁盘。默认有8个线程进行数据处理
+​	一个KafkaRequestHandlerPool监听RequestChannel，当RequestChannle中有数据流入时，该进程负责处理数据，并最中放入磁盘。默认有8个线程进行数据处理
 
 ​	RequestChannle还封装三个ReposeChannle负责接收响应
 
 
+
+![网络设计](服务端设计.png)
 
