@@ -421,5 +421,164 @@ public class FileChannelDemo {
 
 + 选出感兴趣的IO就绪事件
 
-  通过Selector选择器的select()方法，选出已经注册的、已经就绪的IO事件，保存到SelectionKey选择键集合中。
+  ​		通过Selector选择器的select()方法，选出已经注册的、已经就绪的IO事件，保存到SelectionKey选择键集合中。SelectionKey集合在选择器实例中，调用selectedKeys()方法，可以获得选择键集合。获得集合后，可以根据具体的IO事件类型，执行对应的业务操作。示例代码如下：
+
+  ```java
+  			//轮询，选择需要处理的IO就绪事件
+          while (selector.select() > 0) {
+              //或许就绪的IO事件集合
+              Set<SelectionKey> selectionKeys = selector.selectedKeys();
+              //Iterator<SelectionKey> keyIterator = selectionKeys.iterator();
+              //遍历就绪事件
+              for (SelectionKey selectionKey : selectionKeys) {
+                  //根据具体的IO事件类型，执行对应的业务操作
+                  if (selectionKey.isAcceptable()) {
+                      //ServerSocketChannel服务器监听通道有新连接
+                      log.info("ServerSocketChannel服务器监听通道有新连接");
+                  } else if (selectionKey.isConnectable()) {
+                      log.info("传输通道建立完成");
+                  } else if (selectionKey.isReadable()) {
+                      log.info("传输通道可读");
+                  } else if (selectionKey.isWritable()) {
+                      log.info("传输通道可写");
+                  }
+                  //处理完成后，移除选择键
+                  selectionKeys.remove(selectionKey);
+              }
+          }
+  ```
+
+### 使用NIO实现Discard服务器
+
+服务端代码：
+
+```java
+package org.spiral.myio;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
+
+
+/**
+ * @author : spiral
+ * @since : 2021/1/31 - 上午10:52
+ */
+public class NioDiscardServer {
+
+    private static Logger log = LoggerFactory.getLogger(NioDiscardServer.class);
+
+    private static void startServer() throws IOException {
+        //1.获取选择器
+        Selector selector = Selector.open();
+        //2. 获取通道
+        ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
+        //3. 设置为非阻塞
+        serverSocketChannel.configureBlocking(false);
+        //4. 绑定连接
+        serverSocketChannel.bind(new InetSocketAddress(8080));
+        log.info("服务器启动成功");
+        //5. 将通道注册的"接受新连接"IO时间，注册到选择器上
+        serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
+        //6. 轮询要处理的IO就绪事件
+        while (selector.select() > 0) {
+            //7. 获取单个的选择键，并进行处理
+            for (SelectionKey key : selector.selectedKeys()) {
+                // 8. 判断Key的具体事件类型
+                if (key.isAcceptable()) {
+                    //9. 当选择键的IO事件是"连接就绪"时间，读取客户端连接
+                    SocketChannel socketChannel = serverSocketChannel.accept();
+                    //10. 切换socketChannel为非阻塞模式
+                    socketChannel.configureBlocking(false);
+                    //11. 将新连接的通道注册到选择器上，并注册为可读事件
+                    socketChannel.register(selector, SelectionKey.OP_READ);
+                } else if (key.isReadable()) {
+                    //选择键的IO事件是"可读"事件，读取数据
+                    SocketChannel socketChannel = (SocketChannel) key.channel();
+                    ByteBuffer byteBuffer = ByteBuffer.allocate(1024);
+                    int length = 0;
+                    while ((length = socketChannel.read(byteBuffer)) > 0) {
+                        byteBuffer.flip();
+                        log.info(new String(byteBuffer.array(), 0, length));
+                        byteBuffer.clear();
+                    }
+                    socketChannel.close();
+                }
+            }
+        }
+        serverSocketChannel.close();
+    }
+
+    public static void main(String[] args) throws IOException {
+        startServer();
+    }
+}
+
+```
+
+客户端代码：
+
+```java
+package org.spiral.myio;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
+
+/**
+ * @author : spiral
+ * @since : 2021/1/31 - 上午11:13
+ */
+public class NioDiscardClient {
+    private static Logger log = LoggerFactory.getLogger(NioDiscardClient.class);
+
+    private static void startClient() throws IOException {
+        InetSocketAddress address = new InetSocketAddress("localhost", 8080);
+        //1.获取通道
+        SocketChannel socketChannel = SocketChannel.open(address);
+
+        //2. 切换为非阻塞模式
+        socketChannel.configureBlocking(false);
+        //不断自选、等待连接完成，在期间可以做些其他事情
+        while (!socketChannel.finishConnect()) {
+            log.info("进行服务端连接");
+        }
+        log.info("连接服务端成功");
+        ByteBuffer byteBuffer = ByteBuffer.allocate(1024);
+        byteBuffer.put("hello world".getBytes());
+        byteBuffer.flip();
+        //发送数据到服务器
+        socketChannel.write(byteBuffer);
+        socketChannel.shutdownOutput();
+        socketChannel.close();
+    }
+
+    public static void main(String[] args) throws IOException {
+        startClient();
+
+    }
+
+}
+```
+
+
+
+### 使用SocketChannel在服务器端接受文件
+
+服务器端代码：
+
+```
+
+```
 

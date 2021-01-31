@@ -13,6 +13,7 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
+import java.util.Set;
 
 /**
  * @author : spiral
@@ -43,12 +44,33 @@ public class FileChannelDemo {
         //将通道注册到选择器上，并制定监听事件为："接受连接"事件
         serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
 
+        //轮询，选择需要处理的IO就绪事件
+        while (selector.select() > 0) {
+            //或许就绪的IO事件集合
+            Set<SelectionKey> selectionKeys = selector.selectedKeys();
+            //Iterator<SelectionKey> keyIterator = selectionKeys.iterator();
+            //遍历就绪事件
+            for (SelectionKey selectionKey : selectionKeys) {
+                //根据具体的IO事件类型，执行对应的业务操作
+                if (selectionKey.isAcceptable()) {
+                    //ServerSocketChannel服务器监听通道有新连接
+                    log.info("ServerSocketChannel服务器监听通道有新连接");
+                } else if (selectionKey.isConnectable()) {
+                    log.info("传输通道建立完成");
+                } else if (selectionKey.isReadable()) {
+                    log.info("传输通道可读");
+                } else if (selectionKey.isWritable()) {
+                    log.info("传输通道可写");
+                }
+                //处理完成后，移除选择键
+                selectionKeys.remove(selectionKey);
+            }
+        }
 
-        try (FileInputStream fis = new FileInputStream(
-                srcFile); FileOutputStream fos = new FileOutputStream(destFile);
+
+        try (FileInputStream fis = new FileInputStream(srcFile); FileOutputStream fos = new FileOutputStream(destFile);
              //获取FileChannel通道
-             FileChannel inChannel = fis
-                     .getChannel(); FileChannel outChannel = fos.getChannel()) {
+             FileChannel inChannel = fis.getChannel(); FileChannel outChannel = fos.getChannel()) {
             int length = -1;
             //获取一个字节缓冲区
             ByteBuffer buf = ByteBuffer.allocate(1024);
