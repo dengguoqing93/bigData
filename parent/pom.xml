@@ -11,6 +11,7 @@
         <module>double-cycle</module>
         <module>IOAndNetty</module>
         <module>my-hadoop</module>
+        <module>zk</module>
     </modules>
 
     <packaging>pom</packaging>
@@ -66,6 +67,12 @@
                 <artifactId>junit-jupiter-api</artifactId>
                 <version>${junit.version}</version>
                 <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.zookeeper</groupId>
+                <artifactId>zookeeper</artifactId>
+                <version>3.4.14</version>
             </dependency>
 
         </dependencies>
